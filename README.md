@@ -61,7 +61,7 @@ const { namespace, store, types, consts, initialState, creators } = options
 ### Duck Accessors
 
  * duck.reducer
- * duck.actions
+ * duck.creators
  * duck.types
  * for each const, duck.\<const\>
 
