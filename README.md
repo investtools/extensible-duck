@@ -15,7 +15,7 @@ extensible-duck is an implementation of the [Ducks proposal](https://github.com/
 
 import Duck from 'extensible-duck'
 
-return new Duck({
+export new Duck({
   namespace: 'my-app', store: 'widgets',
   types: ['LOAD', 'CREATE', 'UPDATE', 'REMOVE'],
   initialState: {},
