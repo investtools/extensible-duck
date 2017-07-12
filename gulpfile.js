@@ -79,7 +79,7 @@ function build() {
                                             babelrc: false,
                                             presets: [
                                                 [
-                                                    'env',
+                                                    'es2015',
                                                     {
                                                         // Enable tree-shaking by disabling commonJS transformation
                                                         modules: false,
