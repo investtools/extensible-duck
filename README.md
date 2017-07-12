@@ -7,6 +7,7 @@ extensible-duck is an implementation of the [Ducks proposal](https://github.com/
 [![Test Coverage](https://codeclimate.com/github/investtools/extensible-duck/badges/coverage.svg)](https://codeclimate.com/github/investtools/extensible-duck)
 [![Dependency Status](https://david-dm.org/investtools/extensible-duck.svg)](https://david-dm.org/investtools/extensible-duck)
 [![devDependency Status](https://david-dm.org/investtools/extensible-duck/dev-status.svg)](https://david-dm.org/investtools/extensible-duck#info=devDependencies)
+![](http://img.badgesize.io/investtools/extensible-duck/master/dist/extensible-duck.min.js?compression=gzip)
 
 ## Basic Usage
 
