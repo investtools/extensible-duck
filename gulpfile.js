@@ -180,18 +180,39 @@ function testBrowser() {
                     },
                     // Externals isn't necessary here since these are for tests.
                     module: {
-                        loaders: [
                             // This is what allows us to author in future JavaScript
+                        rules: [
                             {
                                 test: /\.js$/,
                                 exclude: /node_modules/,
-                                loader: 'babel-loader',
+                                use: [
+                                    {
+                                        loader: 'babel-loader',
+                                        query: {
+                                            babelrc: false,
+                                            presets: [
+                                                [
+                                                    'es2015',
+                                                    {
+                                                        modules: false,
+                                                    },
+                                                ],
+                                            ],
+                                            plugins: [
+                                                'lodash',
+                                                'transform-object-rest-spread',
+                                            ],
+                                        },
+                                    },
+                                ],
                             },
-                            // This allows the test setup scripts to load `package.json`
                             {
                                 test: /\.json$/,
-                                exclude: /node_modules/,
-                                loader: 'json-loader',
+                                use: [
+                                    {
+                                        loader: 'json-loader',
+                                    },
+                                ],
                             },
                         ],
                     },
@@ -204,7 +225,7 @@ function testBrowser() {
                     ],
                     devtool: 'inline-source-map',
                 },
-                null,
+                webpack,
                 () => {
                     if (firstBuild) {
                         $.livereload.listen({
