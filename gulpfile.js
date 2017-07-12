@@ -22,226 +22,220 @@ const destinationFolder = path.dirname(mainFile)
 const exportFileName = path.basename(mainFile, path.extname(mainFile))
 
 function cleanDist(done) {
-    del([destinationFolder]).then(() => done())
+  del([destinationFolder]).then(() => done())
 }
 
 function cleanTmp(done) {
-    del(['tmp']).then(() => done())
+  del(['tmp']).then(() => done())
 }
 
 // Lint a set of files
 function lint(files) {
-    return gulp
-        .src(files)
-        .pipe($.eslint())
-        .pipe($.eslint.format())
-        .pipe($.eslint.failAfterError())
+  return gulp
+    .src(files)
+    .pipe($.eslint())
+    .pipe($.eslint.format())
+    .pipe($.eslint.failAfterError())
 }
 
 function lintSrc() {
-    return lint('src/**/*.js')
+  return lint('src/**/*.js')
 }
 
 function lintTest() {
-    return lint('test/**/*.js')
+  return lint('test/**/*.js')
 }
 
 function lintGulpfile() {
-    return lint('gulpfile.js')
+  return lint('gulpfile.js')
 }
 
 function build() {
-    return gulp
-        .src(path.join('src', config.entryFileName))
-        .pipe(
-            webpackStream(
-                {
-                    output: {
-                        filename: `${exportFileName}.js`,
-                        libraryTarget: 'umd',
-                        library: config.mainVarName,
-                    },
-                    // Add your own externals here. For instance,
-                    // {
-                    //   jquery: true
-                    // }
-                    // would externalize the `jquery` module.
-                    externals: {},
-                    module: {
-                        rules: [
-                            {
-                                test: /\.js$/,
-                                exclude: /node_modules/,
-                                use: [
-                                    {
-                                        loader: 'babel-loader',
-                                        query: {
-                                            babelrc: false,
-                                            presets: [
-                                                [
-                                                    'es2015',
-                                                    {
-                                                        // Enable tree-shaking by disabling commonJS transformation
-                                                        modules: false,
-                                                    },
-                                                ],
-                                            ],
-                                            plugins: [
-                                                'lodash',
-                                                'transform-object-rest-spread',
-                                            ],
-                                        },
-                                    },
-                                ],
-                            },
+  return gulp
+    .src(path.join('src', config.entryFileName))
+    .pipe(
+      webpackStream(
+        {
+          output: {
+            filename: `${exportFileName}.js`,
+            libraryTarget: 'umd',
+            library: config.mainVarName,
+          },
+          // Add your own externals here. For instance,
+          // {
+          //   jquery: true
+          // }
+          // would externalize the `jquery` module.
+          externals: {},
+          module: {
+            rules: [
+              {
+                test: /\.js$/,
+                exclude: /node_modules/,
+                use: [
+                  {
+                    loader: 'babel-loader',
+                    query: {
+                      babelrc: false,
+                      presets: [
+                        [
+                          'es2015',
+                          {
+                            // Enable tree-shaking by disabling commonJS transformation
+                            modules: false,
+                          },
                         ],
+                      ],
+                      plugins: ['lodash', 'transform-object-rest-spread'],
                     },
-                    devtool: 'source-map',
-                    plugins: [new LodashModuleReplacementPlugin()],
-                },
-                webpack
-            )
-        )
-        .pipe(gulp.dest(destinationFolder))
-        .pipe($.filter(['**', '!**/*.js.map']))
-        .pipe($.rename(`${exportFileName}.min.js`))
-        .pipe($.sourcemaps.init({ loadMaps: true }))
-        .pipe($.uglify())
-        .pipe($.sourcemaps.write('./'))
-        .pipe(gulp.dest(destinationFolder))
+                  },
+                ],
+              },
+            ],
+          },
+          devtool: 'source-map',
+          plugins: [new LodashModuleReplacementPlugin()],
+        },
+        webpack
+      )
+    )
+    .pipe(gulp.dest(destinationFolder))
+    .pipe($.filter(['**', '!**/*.js.map']))
+    .pipe($.rename(`${exportFileName}.min.js`))
+    .pipe($.sourcemaps.init({ loadMaps: true }))
+    .pipe($.uglify())
+    .pipe($.sourcemaps.write('./'))
+    .pipe(gulp.dest(destinationFolder))
 }
 
 function _mocha() {
-    return gulp
-        .src(['test/setup/node.js', 'test/unit/**/*.js'], { read: false })
-        .pipe(
-            $.mocha({
-                reporter: 'dot',
-                globals: Object.keys(mochaGlobals.globals),
-                ignoreLeaks: false,
-            })
-        )
+  return gulp
+    .src(['test/setup/node.js', 'test/unit/**/*.js'], { read: false })
+    .pipe(
+      $.mocha({
+        reporter: 'dot',
+        globals: Object.keys(mochaGlobals.globals),
+        ignoreLeaks: false,
+      })
+    )
 }
 
 function _registerBabel() {
-    require('babel-register')
+  require('babel-register')
 }
 
 function test() {
-    _registerBabel()
-    return _mocha()
+  _registerBabel()
+  return _mocha()
 }
 
 function coverage(done) {
-    _registerBabel()
-    gulp
-        .src(['src/**/*.js'])
-        .pipe(
-            $.istanbul({
-                instrumenter: Instrumenter,
-                includeUntested: true,
-            })
-        )
-        .pipe($.istanbul.hookRequire())
-        .on('finish', () => {
-            return test().pipe($.istanbul.writeReports()).on('end', done)
-        })
+  _registerBabel()
+  gulp
+    .src(['src/**/*.js'])
+    .pipe(
+      $.istanbul({
+        instrumenter: Instrumenter,
+        includeUntested: true,
+      })
+    )
+    .pipe($.istanbul.hookRequire())
+    .on('finish', () => {
+      return test().pipe($.istanbul.writeReports()).on('end', done)
+    })
 }
 
 const watchFiles = ['src/**/*', 'test/**/*', 'package.json', '**/.eslintrc']
 
 // Run the headless unit tests as you make changes.
 function watch() {
-    gulp.watch(watchFiles, ['test'])
+  gulp.watch(watchFiles, ['test'])
 }
 
 function testBrowser() {
-    // Our testing bundle is made up of our unit tests, which
-    // should individually load up pieces of our application.
-    // We also include the browser setup file.
-    const testFiles = glob.sync('./test/unit/**/*.js')
-    const allFiles = ['./test/setup/browser.js'].concat(testFiles)
+  // Our testing bundle is made up of our unit tests, which
+  // should individually load up pieces of our application.
+  // We also include the browser setup file.
+  const testFiles = glob.sync('./test/unit/**/*.js')
+  const allFiles = ['./test/setup/browser.js'].concat(testFiles)
 
-    // Lets us differentiate between the first build and subsequent builds
-    var firstBuild = true
+  // Lets us differentiate between the first build and subsequent builds
+  var firstBuild = true
 
-    // This empty stream might seem like a hack, but we need to specify all of our files through
-    // the `entry` option of webpack. Otherwise, it ignores whatever file(s) are placed in here.
-    return gulp
-        .src('')
-        .pipe($.plumber())
-        .pipe(
-            webpackStream(
-                {
-                    watch: true,
-                    entry: allFiles,
-                    output: {
-                        filename: '__spec-build.js',
-                    },
-                    // Externals isn't necessary here since these are for tests.
-                    module: {
-                            // This is what allows us to author in future JavaScript
-                        rules: [
-                            {
-                                test: /\.js$/,
-                                exclude: /node_modules/,
-                                use: [
-                                    {
-                                        loader: 'babel-loader',
-                                        query: {
-                                            babelrc: false,
-                                            presets: [
-                                                [
-                                                    'es2015',
-                                                    {
-                                                        modules: false,
-                                                    },
-                                                ],
-                                            ],
-                                            plugins: [
-                                                'lodash',
-                                                'transform-object-rest-spread',
-                                            ],
-                                        },
-                                    },
-                                ],
-                            },
-                            {
-                                test: /\.json$/,
-                                use: [
-                                    {
-                                        loader: 'json-loader',
-                                    },
-                                ],
-                            },
+  // This empty stream might seem like a hack, but we need to specify all of our files through
+  // the `entry` option of webpack. Otherwise, it ignores whatever file(s) are placed in here.
+  return gulp
+    .src('')
+    .pipe($.plumber())
+    .pipe(
+      webpackStream(
+        {
+          watch: true,
+          entry: allFiles,
+          output: {
+            filename: '__spec-build.js',
+          },
+          // Externals isn't necessary here since these are for tests.
+          module: {
+            // This is what allows us to author in future JavaScript
+            rules: [
+              {
+                test: /\.js$/,
+                exclude: /node_modules/,
+                use: [
+                  {
+                    loader: 'babel-loader',
+                    query: {
+                      babelrc: false,
+                      presets: [
+                        [
+                          'es2015',
+                          {
+                            modules: false,
+                          },
                         ],
+                      ],
+                      plugins: ['lodash', 'transform-object-rest-spread'],
                     },
-                    plugins: [
-                        // By default, webpack does `n=>n` compilation with entry files. This concatenates
-                        // them into a single chunk.
-                        new webpack.optimize.LimitChunkCountPlugin({
-                            maxChunks: 1,
-                        }),
-                    ],
-                    devtool: 'inline-source-map',
-                },
-                webpack,
-                () => {
-                    if (firstBuild) {
-                        $.livereload.listen({
-                            port: 35729,
-                            host: 'localhost',
-                            start: true,
-                        })
-                        gulp.watch(watchFiles, ['lint'])
-                    } else {
-                        $.livereload.reload('./tmp/__spec-build.js')
-                    }
-                    firstBuild = false
-                }
-            )
-        )
-        .pipe(gulp.dest('./tmp'))
+                  },
+                ],
+              },
+              {
+                test: /\.json$/,
+                use: [
+                  {
+                    loader: 'json-loader',
+                  },
+                ],
+              },
+            ],
+          },
+          plugins: [
+            // By default, webpack does `n=>n` compilation with entry files. This concatenates
+            // them into a single chunk.
+            new webpack.optimize.LimitChunkCountPlugin({
+              maxChunks: 1,
+            }),
+          ],
+          devtool: 'inline-source-map',
+        },
+        webpack,
+        () => {
+          if (firstBuild) {
+            $.livereload.listen({
+              port: 35729,
+              host: 'localhost',
+              start: true,
+            })
+            gulp.watch(watchFiles, ['lint'])
+          } else {
+            $.livereload.reload('./tmp/__spec-build.js')
+          }
+          firstBuild = false
+        }
+      )
+    )
+    .pipe(gulp.dest('./tmp'))
 }
 
 // Remove the built files
