@@ -1,6 +1,6 @@
 {
   "name": "extensible-duck",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Modular and Extensible Redux Reducer Bundles (ducks-modular-redux)",
   "main": "dist/extensible-duck.js",
   "scripts": {
