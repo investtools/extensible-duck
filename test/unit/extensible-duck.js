@@ -125,6 +125,13 @@ describe('Duck', () => {
       })
       expect(d3.creators.get()).to.eql({ d1: true, d2: true, d3: true })
     })
+    context('when a function is passed', () => {
+      it('passes the duck instance as argument', () => {
+        const duck = new Duck({ foo: 2 })
+        const childDuck = duck.extend(parent => ({ bar: parent.options.foo * 2 }))
+        expect(childDuck.options.bar).to.eql(4)
+      })
+    })
     it('updates the old creators with the new properties', () => {
       const duck = new Duck({
         namespace: 'a', store: 'x',
