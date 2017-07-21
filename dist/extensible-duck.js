@@ -520,6 +520,9 @@ var Duck = function () {
     value: function extend(options) {
       var _this2 = this;
 
+      if (__WEBPACK_IMPORTED_MODULE_2_lodash_isFunction___default()(options)) {
+        options = options(this);
+      }
       options = assignDefaults(options);
       var parent = this.options;
       var initialState = void 0;
