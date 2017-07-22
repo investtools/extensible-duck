@@ -8,7 +8,7 @@ describe('Duck', () => {
         new Duck({
           namespace: 'app',
           store: 'users',
-          types: ['FETCH']
+          types: ['FETCH'],
         }).types
       ).to.eql({ FETCH: 'app/users/FETCH' })
     })
@@ -16,12 +16,12 @@ describe('Duck', () => {
       const duck = new Duck({
         types: ['FETCH'],
         creators: ({ types }) => ({
-          get: id => ({ type: types.FETCH, id })
-        })
+          get: id => ({ type: types.FETCH, id }),
+        }),
       })
       expect(duck.creators.get(15)).to.eql({
         type: duck.types.FETCH,
-        id: 15
+        id: 15,
       })
     })
     it('lets the selectors compose themselves and reference the duck instance', () => {
@@ -29,8 +29,8 @@ describe('Duck', () => {
         initialState: {
           items: [
             { name: 'apple', value: 1.2 },
-            { name: 'orange', value: 0.95 }
-          ]
+            { name: 'orange', value: 0.95 },
+          ],
         },
         selectors: {
           items: state => state.items, // gets the items from complete state
@@ -39,31 +39,31 @@ describe('Duck', () => {
             // Can be composed multiple such states if using library like reselect.
             selectors
               .items(state)
-              .reduce((computedTotal, item) => computedTotal + item.value, 0)
-        }
+              .reduce((computedTotal, item) => computedTotal + item.value, 0),
+        },
       })
       expect(duck.selectors.items(duck.initialState)).to.eql([
         { name: 'apple', value: 1.2 },
-        { name: 'orange', value: 0.95 }
+        { name: 'orange', value: 0.95 },
       ])
       expect(duck.selectors.subTotal(duck.initialState)).to.eql(2.15)
     })
     it('lets the initialState reference the duck instance', () => {
       const duck = new Duck({
         consts: { statuses: ['NEW'] },
-        initialState: ({ statuses }) => ({ status: statuses.NEW })
+        initialState: ({ statuses }) => ({ status: statuses.NEW }),
       })
       expect(duck.initialState).to.eql({ status: 'NEW' })
     })
     it('accepts the initialState as an object', () => {
       const duck = new Duck({
-        initialState: { obj: {} }
+        initialState: { obj: {} },
       })
       expect(duck.initialState).to.eql({ obj: {} })
     })
     it('creates the constant objects', () => {
       const duck = new Duck({
-        consts: { statuses: ['READY', 'ERROR'] }
+        consts: { statuses: ['READY', 'ERROR'] },
       })
       expect(duck.statuses).to.eql({ READY: 'READY', ERROR: 'ERROR' })
     })
@@ -79,10 +79,10 @@ describe('Duck', () => {
             default:
               return state
           }
-        }
+        },
       })
       expect(duck.reducer({}, { type: duck.types.FETCH })).to.eql({
-        worked: true
+        worked: true,
       })
     })
     it('passes the initialState to the original reducer when state is undefined', () => {
@@ -90,10 +90,10 @@ describe('Duck', () => {
         initialState: { obj: {} },
         reducer: (state, action) => {
           return state
-        }
+        },
       })
       expect(duck.reducer(undefined, { type: duck.types.FETCH })).to.eql({
-        obj: {}
+        obj: {},
       })
     })
   })
@@ -113,10 +113,10 @@ describe('Duck', () => {
       const duck = new Duck({
         namespace: 'ns',
         store: 'x',
-        types: ['FETCH']
+        types: ['FETCH'],
       })
       expect(duck.extend({ namespace: 'ns2', store: 'y' }).types).to.eql({
-        FETCH: 'ns2/y/FETCH'
+        FETCH: 'ns2/y/FETCH',
       })
     })
     it('merges the consts', () => {
@@ -125,7 +125,7 @@ describe('Duck', () => {
         duck.extend({ consts: { statuses: ['FAILED'] } }).statuses
       ).to.eql({
         READY: 'READY',
-        FAILED: 'FAILED'
+        FAILED: 'FAILED',
       })
     })
     it('appends new types', () => {
@@ -133,38 +133,38 @@ describe('Duck', () => {
         new Duck({}).extend({
           namespace: 'ns2',
           store: 'y',
-          types: ['RESET']
+          types: ['RESET'],
         }).types
       ).to.eql({ RESET: 'ns2/y/RESET' })
     })
     it('appends the new reducers', () => {
       const duck = new Duck({
         creators: () => ({
-          get: () => ({ type: 'GET' })
-        })
+          get: () => ({ type: 'GET' }),
+        }),
       })
       const childDuck = duck.extend({
         creators: () => ({
-          delete: () => ({ type: 'DELETE' })
-        })
+          delete: () => ({ type: 'DELETE' }),
+        }),
       })
       expect(_.keys(childDuck.creators)).to.eql(['get', 'delete'])
     })
     it('lets the reducers access the parents', () => {
       const d1 = new Duck({
         creators: () => ({
-          get: () => ({ d1: true })
-        })
+          get: () => ({ d1: true }),
+        }),
       })
       const d2 = d1.extend({
         creators: (duck, parent) => ({
-          get: () => ({ ...parent.get(duck), d2: true })
-        })
+          get: () => ({ ...parent.get(duck), d2: true }),
+        }),
       })
       const d3 = d2.extend({
         creators: (duck, parent) => ({
-          get: () => ({ ...parent.get(duck), d3: true })
-        })
+          get: () => ({ ...parent.get(duck), d3: true }),
+        }),
       })
       expect(d3.creators.get()).to.eql({ d1: true, d2: true, d3: true })
     })
@@ -172,7 +172,7 @@ describe('Duck', () => {
       it('passes the duck instance as argument', () => {
         const duck = new Duck({ foo: 2 })
         const childDuck = duck.extend(parent => ({
-          bar: parent.options.foo * 2
+          bar: parent.options.foo * 2,
         }))
         expect(childDuck.options.bar).to.eql(4)
       })
@@ -183,8 +183,8 @@ describe('Duck', () => {
         store: 'x',
         types: ['GET'],
         creators: ({ types }) => ({
-          get: () => ({ type: types.GET })
-        })
+          get: () => ({ type: types.GET }),
+        }),
       })
       const childDuck = duck.extend({ namespace: 'b', store: 'y' })
       expect(childDuck.creators.get()).to.eql({ type: 'b/y/GET' })
@@ -196,12 +196,12 @@ describe('Duck', () => {
         initialState: {
           items: [
             { name: 'apple', value: 1.2 },
-            { name: 'orange', value: 0.95 }
-          ]
+            { name: 'orange', value: 0.95 },
+          ],
         },
         selectors: {
-          items: state => state.items // gets the items from complete state
-        }
+          items: state => state.items, // gets the items from complete state
+        },
       })
       const childDuck = duck.extend({
         namespace: 'b',
@@ -212,12 +212,12 @@ describe('Duck', () => {
             // Can be composed multiple such states if using library like reselect.
             selectors
               .items(state)
-              .reduce((computedTotal, item) => computedTotal + item.value, 0)
-        }
+              .reduce((computedTotal, item) => computedTotal + item.value, 0),
+        },
       })
       expect(childDuck.selectors.items(duck.initialState)).to.eql([
         { name: 'apple', value: 1.2 },
-        { name: 'orange', value: 0.95 }
+        { name: 'orange', value: 0.95 },
       ])
       expect(childDuck.selectors.subTotal(duck.initialState)).to.eql(2.15)
     })
@@ -230,7 +230,7 @@ describe('Duck', () => {
             default:
               return state
           }
-        }
+        },
       })
       const duck = parentDuck.extend({
         reducer: (state, action) => {
@@ -240,11 +240,11 @@ describe('Duck', () => {
             default:
               return state
           }
-        }
+        },
       })
       expect(duck.reducer({}, { type: 'FETCH' })).to.eql({
         parentDuck: true,
-        duck: true
+        duck: true,
       })
     })
     it('does not affect the original duck', () => {
@@ -256,7 +256,7 @@ describe('Duck', () => {
             default:
               return state
           }
-        }
+        },
       })
       const duck = parentDuck.extend({
         reducer: (state, action) => {
@@ -266,10 +266,10 @@ describe('Duck', () => {
             default:
               return state
           }
-        }
+        },
       })
       expect(parentDuck.reducer({}, { type: 'FETCH' })).to.eql({
-        parentDuck: true
+        parentDuck: true,
       })
     })
     it('passes the parent initialState to the child', () => {
@@ -277,7 +277,7 @@ describe('Duck', () => {
       const duck = parentDuck.extend({
         initialState: (duck, parentState) => {
           return { ...parentState, child: true }
-        }
+        },
       })
       expect(duck.initialState).to.eql({ parent: true, child: true })
     })

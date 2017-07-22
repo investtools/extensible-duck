@@ -10,12 +10,12 @@
     "watch": "gulp watch",
     "build": "gulp build",
     "precommit": "lint-staged",
-    "prettier": "prettier --no-semi --single-quote --write '{src,test}/**/*.js'",
+    "prettier": "prettier --no-semi --single-quote --trailing-comma es5 --write '{src,test}/**/*.js'",
     "coverage": "gulp coverage"
   },
   "lint-staged": {
-		"{src,test}/**/*.js": [
-			"prettier --no-semi --single-quote --write",
+		"**/{src,test}/**/*.js": [
+			"prettier --no-semi --single-quote --trailing-comma es5 --write",
 			"git add"
 		]
 	},

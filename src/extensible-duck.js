@@ -16,7 +16,7 @@ function assignDefaults(options) {
     ...options,
     creators: options.creators || (() => ({})),
     selectors: options.selectors || {},
-    types: options.types || []
+    types: options.types || [],
   }
 }
 
@@ -54,7 +54,7 @@ export default class Duck {
       consts,
       initialState,
       creators,
-      selectors
+      selectors,
     } = options
     this.options = options
     _.each(consts, (values, name) => {
@@ -94,7 +94,7 @@ export default class Duck {
       initialState,
       consts: _.mergeWith({}, parent.consts, options.consts, (a, b) => [
         ...(a || []),
-        ...(b || [])
+        ...(b || []),
       ]),
       creators: duck => {
         const parentCreators = parent.creators(duck)
@@ -104,7 +104,7 @@ export default class Duck {
         const parentSelectors = parent.selectors
         return {
           ...parentSelectors,
-          ...options.selectors
+          ...options.selectors,
         }
       })(),
       types: [...parent.types, ...options.types],
@@ -115,7 +115,7 @@ export default class Duck {
         } else {
           return options.reducer(state, action, duck)
         }
-      }
+      },
     })
   }
 }
