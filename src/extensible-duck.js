@@ -34,6 +34,9 @@ export default class Duck {
     return this.options.reducer(state, action, this)
   }
   extend(options) {
+    if(_.isFunction(options)) {
+      options = options(this)
+    }
     options = assignDefaults(options)
     const parent = this.options
     let initialState
