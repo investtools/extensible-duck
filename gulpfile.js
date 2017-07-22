@@ -59,7 +59,7 @@ function build() {
           output: {
             filename: `${exportFileName}.js`,
             libraryTarget: 'umd',
-            library: config.mainVarName,
+            library: config.mainVarName
           },
           // Add your own externals here. For instance,
           // {
@@ -82,19 +82,19 @@ function build() {
                           'es2015',
                           {
                             // Enable tree-shaking by disabling commonJS transformation
-                            modules: false,
-                          },
-                        ],
+                            modules: false
+                          }
+                        ]
                       ],
-                      plugins: ['lodash', 'transform-object-rest-spread'],
-                    },
-                  },
-                ],
-              },
-            ],
+                      plugins: ['lodash', 'transform-object-rest-spread']
+                    }
+                  }
+                ]
+              }
+            ]
           },
           devtool: 'source-map',
-          plugins: [new LodashModuleReplacementPlugin()],
+          plugins: [new LodashModuleReplacementPlugin()]
         },
         webpack
       )
@@ -115,7 +115,7 @@ function _mocha() {
       $.mocha({
         reporter: 'dot',
         globals: Object.keys(mochaGlobals.globals),
-        ignoreLeaks: false,
+        ignoreLeaks: false
       })
     )
 }
@@ -136,7 +136,7 @@ function coverage(done) {
     .pipe(
       $.istanbul({
         instrumenter: Instrumenter,
-        includeUntested: true,
+        includeUntested: true
       })
     )
     .pipe($.istanbul.hookRequire())
@@ -173,7 +173,7 @@ function testBrowser() {
           watch: true,
           entry: allFiles,
           output: {
-            filename: '__spec-build.js',
+            filename: '__spec-build.js'
           },
           // Externals isn't necessary here since these are for tests.
           module: {
@@ -191,33 +191,33 @@ function testBrowser() {
                         [
                           'es2015',
                           {
-                            modules: false,
-                          },
-                        ],
+                            modules: false
+                          }
+                        ]
                       ],
-                      plugins: ['lodash', 'transform-object-rest-spread'],
-                    },
-                  },
-                ],
+                      plugins: ['lodash', 'transform-object-rest-spread']
+                    }
+                  }
+                ]
               },
               {
                 test: /\.json$/,
                 use: [
                   {
-                    loader: 'json-loader',
-                  },
-                ],
-              },
-            ],
+                    loader: 'json-loader'
+                  }
+                ]
+              }
+            ]
           },
           plugins: [
             // By default, webpack does `n=>n` compilation with entry files. This concatenates
             // them into a single chunk.
             new webpack.optimize.LimitChunkCountPlugin({
-              maxChunks: 1,
-            }),
+              maxChunks: 1
+            })
           ],
-          devtool: 'inline-source-map',
+          devtool: 'inline-source-map'
         },
         webpack,
         () => {
@@ -225,7 +225,7 @@ function testBrowser() {
             $.livereload.listen({
               port: 35729,
               host: 'localhost',
-              start: true,
+              start: true
             })
             gulp.watch(watchFiles, ['lint'])
           } else {
