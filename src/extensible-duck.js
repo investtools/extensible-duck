@@ -29,19 +29,19 @@ function assignDefaults(options) {
  * @returns 
  */
 function deriveSelectors(selectors, Duck) {
-  const interceptedSelectors = {}
+  const composedSelectors = {}
   Object.keys(selectors).forEach(key => {
     if (typeof selectors[key] === 'function') {
       if (typeof selectors[key](Duck.initialState || {}) === 'function') {
         // check if its deriving function, if yes then invoke with previous selectors
-        interceptedSelectors[key] = selectors[key].call(null, selectors)
+        composedSelectors[key] = selectors[key].call(null, composedSelectors)
       } else {
         // casual selector i.e. doesn't use other selectors to derive.
-        interceptedSelectors[key] = selectors[key]
+        composedSelectors[key] = selectors[key]
       }
     }
   })
-  return interceptedSelectors
+  return composedSelectors
 }
 
 export default class Duck {
