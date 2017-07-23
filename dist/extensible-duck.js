@@ -478,8 +478,33 @@ function assignDefaults(options) {
     creators: options.creators || function () {
       return {};
     },
+    selectors: options.selectors || {},
     types: options.types || []
   });
+}
+
+/**
+ * Helper utility to assist in composing the selectors.
+ * Previously defined selectors can be used to derive future selectors.
+ * 
+ * @param {object} selectors 
+ * @param {class} Duck 
+ * @returns 
+ */
+function deriveSelectors(selectors, Duck) {
+  var composedSelectors = {};
+  Object.keys(selectors).forEach(function (key) {
+    if (typeof selectors[key] === 'function') {
+      if (typeof selectors[key](Duck.initialState || {}) === 'function') {
+        // check if its deriving function, if yes then invoke with previous selectors
+        composedSelectors[key] = selectors[key].call(null, composedSelectors);
+      } else {
+        // casual selector i.e. doesn't use other selectors to derive.
+        composedSelectors[key] = selectors[key];
+      }
+    }
+  });
+  return composedSelectors;
 }
 
 var Duck = function () {
@@ -495,7 +520,8 @@ var Duck = function () {
         types = _options.types,
         consts = _options.consts,
         initialState = _options.initialState,
-        creators = _options.creators;
+        creators = _options.creators,
+        selectors = _options.selectors;
 
     this.options = options;
     __WEBPACK_IMPORTED_MODULE_3_lodash_each___default()(consts, function (values, name) {
@@ -505,6 +531,7 @@ var Duck = function () {
     this.initialState = __WEBPACK_IMPORTED_MODULE_2_lodash_isFunction___default()(initialState) ? initialState(this) : initialState;
     this.reducer = this.reducer.bind(this);
     this.creators = creators(this);
+    this.selectors = deriveSelectors(selectors, this);
   }
 
   _createClass(Duck, [{
@@ -544,6 +571,10 @@ var Duck = function () {
           var parentCreators = parent.creators(duck);
           return _extends({}, parentCreators, options.creators(duck, parentCreators));
         },
+        selectors: function () {
+          var parentSelectors = parent.selectors;
+          return _extends({}, parentSelectors, options.selectors);
+        }(),
         types: [].concat(_toConsumableArray(parent.types), _toConsumableArray(options.types)),
         reducer: function reducer(state, action, duck) {
           state = parent.reducer(state, action, duck);
