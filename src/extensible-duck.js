@@ -1,19 +1,82 @@
-import _ from 'lodash'
-
 function typeValue(namespace, store, type) {
   return `${namespace}/${store}/${type}`
 }
 
+function zipObject (keys, values) {
+  if (arguments.length == 1) {
+    values = keys[1];
+    keys = keys[0];
+  }
+    
+  var result = {};
+  var i = 0;
+  
+  for (i; i < keys.length; i += 1) {
+    result[keys[i]] = values[i];
+  }
+  
+  return result;
+};
+
 function buildTypes(namespace, store, types) {
-  return _.zipObject(
+  return zipObject(
     types,
-    _.map(types, type => typeValue(namespace, store, type))
+    types.map(type => typeValue(namespace, store, type))
   )
 }
+
+function isObject(obj) {
+    return obj !== null && typeof obj === 'object';
+}
+
+function isFunction(func){
+   return func !== null && typeof func === 'function';
+}
+
+function isUndefined(value){
+   return typeof value === 'undefined' || value === undefined;
+}
+
+function isPlainObject(obj) {
+    return isObject(obj) && (
+        obj.constructor === Object  // obj = {}
+        || obj.constructor === undefined // obj = Object.create(null)
+    );
+}
+
+function mergeDeep(target, ...sources) {
+    if (!sources.length) return target;
+    const source = sources.shift();
+
+    if(Array.isArray(target)) {
+        if(Array.isArray(source)) {
+            target.push(...source);
+        } else {
+            target.push(source);
+        }
+    } else if(isPlainObject(target)) {
+        if(isPlainObject(source)) {
+            for(let key of Object.keys(source)) {
+                if(!target[key]) {
+                    target[key] = source[key];
+                } else {
+                    mergeDeep(target[key], source[key]);
+                }
+            }
+        } else {
+            throw new Error(`Cannot merge object with non-object`);
+        }
+    } else {
+        target = source;
+    }
+
+    return mergeDeep(target, ...sources);
+};
 
 function assignDefaults(options) {
   return {
     ...options,
+    consts: options.consts || {},
     creators: options.creators || (() => ({})),
     selectors: options.selectors || {},
     types: options.types || [],
@@ -31,8 +94,8 @@ function assignDefaults(options) {
 function deriveSelectors(selectors, Duck) {
   const composedSelectors = {}
   Object.keys(selectors).forEach(key => {
-    if (typeof selectors[key] === 'function') {
-      if (typeof selectors[key](Duck.initialState || {}) === 'function') {
+    if (isFunction(selectors[key])) {
+      if (isFunction(selectors[key](Duck.initialState || {}))) {
         // check if its deriving function, if yes then invoke with previous selectors
         composedSelectors[key] = selectors[key].call(null, composedSelectors)
       } else {
@@ -57,11 +120,12 @@ export default class Duck {
       selectors,
     } = options
     this.options = options
-    _.each(consts, (values, name) => {
-      this[name] = _.zipObject(values, values)
+    Object.keys(consts).forEach(name => {
+      this[name] = zipObject(consts[name], consts[name])
     })
+
     this.types = buildTypes(namespace, store, types)
-    this.initialState = _.isFunction(initialState)
+    this.initialState = isFunction(initialState)
       ? initialState(this)
       : initialState
     this.reducer = this.reducer.bind(this)
@@ -69,21 +133,21 @@ export default class Duck {
     this.selectors = deriveSelectors(selectors, this)
   }
   reducer(state, action) {
-    if (_.isUndefined(state)) {
+    if (isUndefined(state)) {
       state = this.initialState
     }
     return this.options.reducer(state, action, this)
   }
   extend(options) {
-    if (_.isFunction(options)) {
+    if (isFunction(options)) {
       options = options(this)
     }
     options = assignDefaults(options)
     const parent = this.options
     let initialState
-    if (_.isFunction(options.initialState)) {
+    if (isFunction(options.initialState)) {
       initialState = duck => options.initialState(duck, this.initialState)
-    } else if (_.isUndefined(options.initialState)) {
+    } else if (isUndefined(options.initialState)) {
       initialState = parent.initialState
     } else {
       initialState = options.initialState
@@ -92,10 +156,7 @@ export default class Duck {
       ...parent,
       ...options,
       initialState,
-      consts: _.mergeWith({}, parent.consts, options.consts, (a, b) => [
-        ...(a || []),
-        ...(b || []),
-      ]),
+      consts: mergeDeep({}, parent.consts, options.consts),
       creators: duck => {
         const parentCreators = parent.creators(duck)
         return { ...parentCreators, ...options.creators(duck, parentCreators) }
@@ -110,7 +171,7 @@ export default class Duck {
       types: [...parent.types, ...options.types],
       reducer: (state, action, duck) => {
         state = parent.reducer(state, action, duck)
-        if (_.isUndefined(options.reducer)) {
+        if (isUndefined(options.reducer)) {
           return state
         } else {
           return options.reducer(state, action, duck)
