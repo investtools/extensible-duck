@@ -26,6 +26,9 @@ export new Duck({
       default: return state
     }
   },
+  selectors: {
+    root: state => state
+  },
   creators: (duck) => ({
     loadWidgets:      () => ({ type: duck.types.LOAD }),
     createWidget: widget => ({ type: duck.types.CREATE, widget })
@@ -57,12 +60,13 @@ const { namespace, store, types, consts, initialState, creators } = options
 | initialState | State passed to the reducer when the state is undefined | Anything                       | `{}`                                        |
 | reducer      | Action reducer                                          | function(state, action, duck)  | `(state, action, duck) => { return state }` |
 | creators     | Action creators                                         | function(duck)                 | `duck => ({ type: types.CREATE })`          |
-
+| selectors     | state selectors                                         | Object of functions                | `{ root: state => state}`          |
 
 ### Duck Accessors
 
  * duck.reducer
  * duck.creators
+ * duck.selectors
  * duck.types
  * for each const, duck.\<const\>
 
@@ -190,4 +194,57 @@ import createDuck from './remoteObjDuck'
 import reset from './resetDuckExtension'
 
 export default createDuck({ namespace: 'my-app',store: 'user', path: '/users' }).extend(reset)
+```
+
+
+## Creating Ducks with selectors
+
+Selectors help in providing performance optimisations when used with libraries such as React-Redux, Preact-Redux etc.
+
+```js
+// Duck.js
+
+import Duck from 'extensible-duck'
+
+export new Duck({
+  initialState: {
+    items: [
+      { name: 'apple', value: 1.2 },
+      { name: 'orange', value: 0.95 }
+    ]
+  },
+  reducer: (state, action, duck) => {
+    switch(action.type) {
+      // do reducer stuff
+      default: return state
+    }
+  },
+  selectors: {
+    items: state => state.items, // gets the items from state
+    subTotal: selectors => state =>
+      // Get another derived state reusing previous selector. In this case items selector
+      // Can compose multiple such selectors if using library like reselect. Recommended!
+      // Note: The order of the selectors definitions matters
+      selectors
+        .items(state)
+        .reduce((computedTotal, item) => computedTotal + item.value, 0)
+  }
+})
+```
+
+```js
+// HomeView.js
+import React from 'react'
+import Duck from './Duck'
+
+@connect(state => ({
+  items: Duck.selectors.items(state),
+  subTotal: Duck.selectors.subTotal(state)
+}))
+export default class HomeView extends React.Component {
+  render(){
+    // make use of sliced state here in props
+    ...
+  }
+}
 ```

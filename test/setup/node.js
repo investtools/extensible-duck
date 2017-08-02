@@ -1,9 +1,9 @@
-global.chai = require('chai');
-global.sinon = require('sinon');
-global.chai.use(require('sinon-chai'));
+global.chai = require('chai')
+global.sinon = require('sinon')
+global.chai.use(require('sinon-chai'))
 
-require('babel-core/register');
-require('./setup')();
+require('babel-core/register')
+require('./setup')()
 
 /*
 	Uncomment the following if your library uses features of the DOM,

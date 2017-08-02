@@ -9,8 +9,16 @@
     "test-browser": "gulp test-browser",
     "watch": "gulp watch",
     "build": "gulp build",
+    "precommit": "lint-staged",
+    "prettier": "prettier --no-semi --single-quote --trailing-comma es5 --write '{src,test}/**/*.js'",
     "coverage": "gulp coverage"
   },
+  "lint-staged": {
+		"**/{src,test}/**/*.js": [
+			"prettier --no-semi --single-quote --trailing-comma es5 --write",
+			"git add"
+		]
+	},
   "repository": {
     "type": "git",
     "url": "https://github.com/investtools/extensible-duck.git"
@@ -49,7 +57,9 @@
     "isparta": "4.0.0",
     "json-loader": "0.5.4",
     "lodash-webpack-plugin": "0.11.4",
+    "lint-staged": "4.0.2",
     "mocha": "3.0.2",
+    "prettier": "1.5.3",
     "sinon": "1.17.5",
     "sinon-chai": "2.8.0",
     "webpack": "3.2.0",
