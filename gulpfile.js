@@ -6,7 +6,6 @@ const path = require('path')
 const isparta = require('isparta')
 const webpack = require('webpack')
 const webpackStream = require('webpack-stream')
-const LodashModuleReplacementPlugin = require('lodash-webpack-plugin')
 
 const Instrumenter = isparta.Instrumenter
 const mochaGlobals = require('./test/setup/.globals')
@@ -86,7 +85,7 @@ function build() {
                           },
                         ],
                       ],
-                      plugins: ['lodash', 'transform-object-rest-spread'],
+                      plugins: ['transform-object-rest-spread'],
                     },
                   },
                 ],
@@ -94,7 +93,6 @@ function build() {
             ],
           },
           devtool: 'source-map',
-          plugins: [new LodashModuleReplacementPlugin()],
         },
         webpack
       )
@@ -195,7 +193,7 @@ function testBrowser() {
                           },
                         ],
                       ],
-                      plugins: ['lodash', 'transform-object-rest-spread'],
+                      plugins: ['transform-object-rest-spread'],
                     },
                   },
                 ],
