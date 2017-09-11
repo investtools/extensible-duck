@@ -129,8 +129,8 @@ export default class Duck {
       ? initialState(this)
       : initialState
     this.reducer = this.reducer.bind(this)
-    this.creators = creators(this)
     this.selectors = deriveSelectors(selectors, this)
+    this.creators = creators(this)
   }
   reducer(state, action) {
     if (isUndefined(state)) {

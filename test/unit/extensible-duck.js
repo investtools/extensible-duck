@@ -67,6 +67,22 @@ describe('Duck', () => {
       })
       expect(duck.statuses).to.eql({ READY: 'READY', ERROR: 'ERROR' })
     })
+    it('lets the creators access the selectors', () => {
+      const duck = new Duck({
+        initialState: [],
+        selectors: {
+          sum: numbers => numbers.reduce((sum, n) => sum + n, 0)
+        },
+        creators: ({ selectors }) => ({
+          calculate: () => dispatch => {
+            dispatch({ type: 'CALCULATE', payload: selectors.sum([ 1, 2, 3 ]) })
+          }
+        })
+      })
+      const dispatch = sinon.spy()
+      duck.creators.calculate()(dispatch)
+      expect(dispatch).to.have.been.calledWith({ type: 'CALCULATE', payload: 6 })
+    })
   })
   describe('reducer', () => {
     it('lets the original reducer reference the duck instance', () => {

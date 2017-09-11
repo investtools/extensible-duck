@@ -248,8 +248,8 @@ var Duck = function () {
     this.types = buildTypes(namespace, store, types);
     this.initialState = isFunction(initialState) ? initialState(this) : initialState;
     this.reducer = this.reducer.bind(this);
-    this.creators = creators(this);
     this.selectors = deriveSelectors(selectors, this);
+    this.creators = creators(this);
   }
 
   _createClass(Duck, [{
