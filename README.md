@@ -9,6 +9,24 @@ extensible-duck is an implementation of the [Ducks proposal](https://github.com/
 [![devDependency Status](https://david-dm.org/investtools/extensible-duck/dev-status.svg)](https://david-dm.org/investtools/extensible-duck#info=devDependencies)
 ![](http://img.badgesize.io/investtools/extensible-duck/master/dist/extensible-duck.min.js?compression=gzip)
 
+<!-- MarkdownTOC autolink="true" bracket="round" autoanchor="false" markdown_preview="github" -->
+
+- [Basic Usage](#basic-usage)
+  - [Constructor Arguments](#constructor-arguments)
+  - [Duck Accessors](#duck-accessors)
+  - [Defining the Reducer](#defining-the-reducer)
+  - [Defining the Creators](#defining-the-creators)
+  - [Defining the Initial State](#defining-the-initial-state)
+  - [Defining the Selectors](#defining-the-selectors)
+  - [Defining the Types](#defining-the-types)
+  - [Defining the Constants](#defining-the-constants)
+- [Creating Reusable Ducks](#creating-reusable-ducks)
+- [Extending Ducks](#extending-ducks)
+- [Creating Reusable Duck Extensions](#creating-reusable-duck-extensions)
+- [Creating Ducks with selectors](#creating-ducks-with-selectors)
+
+<!-- /MarkdownTOC -->
+
 ## Basic Usage
 
 ```js
@@ -16,7 +34,7 @@ extensible-duck is an implementation of the [Ducks proposal](https://github.com/
 
 import Duck from 'extensible-duck'
 
-export new Duck({
+export default new Duck({
   namespace: 'my-app', store: 'widgets',
   types: ['LOAD', 'CREATE', 'UPDATE', 'REMOVE'],
   initialState: {},
@@ -69,6 +87,190 @@ const { namespace, store, types, consts, initialState, creators } = options
  * duck.selectors
  * duck.types
  * for each const, duck.\<const\>
+
+### Defining the Reducer
+
+While a plain vanilla reducer would be defined by something like this:
+
+```js
+function reducer(state={}, action) {
+  switch (action.type) {
+    // ...
+    default:
+      return state
+  }
+}
+```
+
+Here the reducer has two slight differences:
+
+ * It receives the duck itself as the third argument
+ * It doesn't define the initial state (see [Defining the Initial State](#defining-the-initial-state))
+
+```js
+new Duck({
+  // ...
+  reducer: (state, action, duck) => {
+    switch (action.type) {
+      // ...
+      default:
+        return state
+    }
+  }
+})
+```
+
+With the `duck` argument you can access the types, the constants, etc (see [Duck Accessors](#duck-accessors)).
+
+### Defining the Creators
+
+While plain vanilla creators would be defined by something like this:
+
+```js
+export function createWidget(widget) {
+  return { type: CREATE, widget }
+}
+
+// Using thunk
+export function updateWidget(widget) {
+  return dispatch => {
+    dispatch({ type: UPDATE, widget })
+  }
+}
+```
+
+With extensible-duck you define it as an Object of functions:
+
+```js
+export default new Duck({
+  // ...
+  creators: {
+    createWidget: widget => ({ type: 'CREATE', widget })
+
+    // Using thunk
+    updateWidget: widget => dispatch => {
+      dispatch({ type: 'UPDATE', widget })
+    }
+  }
+})
+```
+
+If you need to access any duck attribute, you can define a function that returns the Object of functions:
+
+```js
+export default new Duck({
+  // ...
+  types: [ 'CREATE' ],
+  creators: (duck) => ({
+    createWidget: widget => ({ type: duck.types.CREATE, widget })
+  })
+})
+```
+
+
+### Defining the Initial State
+
+Usually the initial state is declared within the the reducer declaration, just like bellow:
+
+```js
+function myReducer(state = {someDefaultValue}, action) {
+  // ...
+}
+```
+
+With extensible-duck you define it separately:
+
+```js
+export default new Duck({
+  // ...
+  initialState: {someDefaultValue}
+})
+```
+
+If you need to access the [types](#defining-the-types) or [constants](#defining-the-constants), you can define this way:
+
+```js
+export default new Duck({
+  // ...
+  consts: { statuses: ['NEW'] },
+  initialState: ({ statuses }) => ({ status: statuses.NEW })
+})
+```
+
+### Defining the Selectors
+
+Simple selectors:
+
+```js
+export default new Duck({
+  // ...
+  selectors: {
+    shopItems:  state => state.shop.items
+  }
+})
+
+```
+
+Composed selectors:
+
+```js
+export default new Duck({
+  // ...
+  selectors: {
+    shopItems:  state => state.shop.items,
+    subtotal: new Duck.Selector(selectors => state =>
+      selectors.shopItems(state).reduce((acc, item) => acc + item.value, 0)
+    )
+  }
+})
+```
+
+Using with [Reselect](https://github.com/reactjs/reselect):
+
+```js
+export default new Duck({
+  // ...
+  selectors: {
+    shopItems:  state => state.shop.items,
+    subtotal: new Duck.Selector(selectors =>
+      createSelector(
+        selectors.shopItems,
+        items => items.reduce((acc, item) => acc + item.value, 0)
+      )
+    )
+  }
+})
+```
+
+### Defining the Types
+
+```js
+export default new Duck({
+  namespace: 'my-app', store: 'widgets',
+  // ...
+  types: [
+    'CREATE',   // myDuck.types.CREATE   = "my-app/widgets/CREATE"
+    'RETREIVE', // myDuck.types.RETREIVE = "my-app/widgets/RETREIVE"
+    'UPDATE',   // myDuck.types.UPDATE   = "my-app/widgets/UPDATE"
+    'DELETE',   // myDuck.types.DELETE   = "my-app/widgets/DELETE"
+  ]
+}
+```
+
+### Defining the Constants
+
+```js
+export default new Duck({
+  // ...
+  consts: {
+    statuses: ['NEW'], // myDuck.statuses = { NEW: "NEW" }
+    fooBar: [
+      'FOO',           // myDuck.fooBar.FOO = "FOO"
+      'BAR'            // myDuck.fooBar.BAR = "BAR"
+    ]
+  }
+}
+```
 
 ## Creating Reusable Ducks
 
@@ -206,7 +408,7 @@ Selectors help in providing performance optimisations when used with libraries s
 
 import Duck from 'extensible-duck'
 
-export new Duck({
+export default new Duck({
   initialState: {
     items: [
       { name: 'apple', value: 1.2 },
@@ -221,13 +423,14 @@ export new Duck({
   },
   selectors: {
     items: state => state.items, // gets the items from state
-    subTotal: selectors => state =>
+    subTotal: new Duck.Selector(selectors => state =>
       // Get another derived state reusing previous selector. In this case items selector
       // Can compose multiple such selectors if using library like reselect. Recommended!
       // Note: The order of the selectors definitions matters
       selectors
         .items(state)
         .reduce((computedTotal, item) => computedTotal + item.value, 0)
+    )
   }
 })
 ```

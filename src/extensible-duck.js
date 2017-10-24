@@ -88,20 +88,18 @@ function assignDefaults(options) {
  * Previously defined selectors can be used to derive future selectors.
  * 
  * @param {object} selectors 
- * @param {class} Duck 
  * @returns 
  */
-function deriveSelectors(selectors, Duck) {
+function deriveSelectors(selectors) {
   const composedSelectors = {}
   Object.keys(selectors).forEach(key => {
-    if (isFunction(selectors[key])) {
-      if (isFunction(selectors[key](Duck.initialState || {}))) {
-        // check if its deriving function, if yes then invoke with previous selectors
-        composedSelectors[key] = selectors[key].call(null, composedSelectors)
-      } else {
-        // casual selector i.e. doesn't use other selectors to derive.
-        composedSelectors[key] = selectors[key]
-      }
+    const selector = selectors[key]
+    if(selector instanceof Selector) {
+      composedSelectors[key] = (...args) =>
+        (composedSelectors[key] = selector.extractFunction(selectors))(...args)
+    }
+    else {
+      composedSelectors[key] = selector
     }
   })
   return composedSelectors
@@ -129,7 +127,7 @@ export default class Duck {
       ? initialState(this)
       : initialState
     this.reducer = this.reducer.bind(this)
-    this.selectors = deriveSelectors(selectors, this)
+    this.selectors = deriveSelectors(selectors)
     this.creators = creators(this)
   }
   reducer(state, action) {
@@ -161,13 +159,7 @@ export default class Duck {
         const parentCreators = parent.creators(duck)
         return { ...parentCreators, ...options.creators(duck, parentCreators) }
       },
-      selectors: (() => {
-        const parentSelectors = parent.selectors
-        return {
-          ...parentSelectors,
-          ...options.selectors,
-        }
-      })(),
+      selectors: { ...parent.selectors, ...options.selectors },
       types: [...parent.types, ...options.types],
       reducer: (state, action, duck) => {
         state = parent.reducer(state, action, duck)
@@ -180,3 +172,16 @@ export default class Duck {
     })
   }
 }
+
+export class Selector {
+  constructor(func) {
+    this.func = func
+  }
+
+  extractFunction(selectors) {
+    return this.func(selectors)
+  }
+}
+
+Duck.Selector = Selector
+

@@ -34,19 +34,32 @@ describe('Duck', () => {
         },
         selectors: {
           items: state => state.items, // gets the items from complete state
-          subTotal: selectors => state =>
+          subTotal: new Duck.Selector(selectors => state =>
             // Get another derived state reusing previous items selector.
             // Can be composed multiple such states if using library like reselect.
             selectors
               .items(state)
-              .reduce((computedTotal, item) => computedTotal + item.value, 0),
-        },
+              .reduce((computedTotal, item) => computedTotal + item.value, 0)
+        )},
       })
       expect(duck.selectors.items(duck.initialState)).to.eql([
         { name: 'apple', value: 1.2 },
         { name: 'orange', value: 0.95 },
       ])
       expect(duck.selectors.subTotal(duck.initialState)).to.eql(2.15)
+    })
+    it('generates the selector function once per selector', () => {
+      let passes = 0
+      const duck = new Duck({
+        selectors: {
+          myFunc: new Duck.Selector(selectors => {
+            passes++
+            return () => {}
+          })},
+      })
+      duck.selectors.myFunc()
+      duck.selectors.myFunc()
+      expect(passes).to.eql(1)
     })
     it('lets the initialState reference the duck instance', () => {
       const duck = new Duck({
@@ -69,7 +82,6 @@ describe('Duck', () => {
     })
     it('lets the creators access the selectors', () => {
       const duck = new Duck({
-        initialState: [],
         selectors: {
           sum: numbers => numbers.reduce((sum, n) => sum + n, 0)
         },
@@ -223,12 +235,13 @@ describe('Duck', () => {
         namespace: 'b',
         store: 'y',
         selectors: {
-          subTotal: selectors => state =>
+          subTotal: new Duck.Selector(selectors => state =>
             // Get another derived state reusing previous items selector.
             // Can be composed multiple such states if using library like reselect.
             selectors
               .items(state)
-              .reduce((computedTotal, item) => computedTotal + item.value, 0),
+              .reduce((computedTotal, item) => computedTotal + item.value, 0)
+          ),
         },
       })
       expect(childDuck.selectors.items(duck.initialState)).to.eql([

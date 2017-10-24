@@ -79,6 +79,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Selector", function() { return Selector; });
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -205,20 +206,18 @@ function assignDefaults(options) {
  * Previously defined selectors can be used to derive future selectors.
  * 
  * @param {object} selectors 
- * @param {class} Duck 
  * @returns 
  */
-function deriveSelectors(selectors, Duck) {
+function deriveSelectors(selectors) {
   var composedSelectors = {};
   Object.keys(selectors).forEach(function (key) {
-    if (isFunction(selectors[key])) {
-      if (isFunction(selectors[key](Duck.initialState || {}))) {
-        // check if its deriving function, if yes then invoke with previous selectors
-        composedSelectors[key] = selectors[key].call(null, composedSelectors);
-      } else {
-        // casual selector i.e. doesn't use other selectors to derive.
-        composedSelectors[key] = selectors[key];
-      }
+    var selector = selectors[key];
+    if (selector instanceof Selector) {
+      composedSelectors[key] = function () {
+        return (composedSelectors[key] = selector.extractFunction(selectors)).apply(undefined, arguments);
+      };
+    } else {
+      composedSelectors[key] = selector;
     }
   });
   return composedSelectors;
@@ -248,7 +247,7 @@ var Duck = function () {
     this.types = buildTypes(namespace, store, types);
     this.initialState = isFunction(initialState) ? initialState(this) : initialState;
     this.reducer = this.reducer.bind(this);
-    this.selectors = deriveSelectors(selectors, this);
+    this.selectors = deriveSelectors(selectors);
     this.creators = creators(this);
   }
 
@@ -287,10 +286,7 @@ var Duck = function () {
           var parentCreators = parent.creators(duck);
           return _extends({}, parentCreators, options.creators(duck, parentCreators));
         },
-        selectors: function () {
-          var parentSelectors = parent.selectors;
-          return _extends({}, parentSelectors, options.selectors);
-        }(),
+        selectors: _extends({}, parent.selectors, options.selectors),
         types: [].concat(_toConsumableArray(parent.types), _toConsumableArray(options.types)),
         reducer: function reducer(state, action, duck) {
           state = parent.reducer(state, action, duck);
@@ -308,6 +304,26 @@ var Duck = function () {
 }();
 
 /* harmony default export */ __webpack_exports__["default"] = (Duck);
+
+
+var Selector = function () {
+  function Selector(func) {
+    _classCallCheck(this, Selector);
+
+    this.func = func;
+  }
+
+  _createClass(Selector, [{
+    key: 'extractFunction',
+    value: function extractFunction(selectors) {
+      return this.func(selectors);
+    }
+  }]);
+
+  return Selector;
+}();
+
+Duck.Selector = Selector;
 
 /***/ })
 /******/ ]);
