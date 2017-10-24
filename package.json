@@ -58,6 +58,7 @@
     "lint-staged": "4.0.2",
     "mocha": "3.0.2",
     "prettier": "1.5.3",
+    "reselect": "^3.0.1",
     "sinon": "1.17.5",
     "sinon-chai": "2.8.0",
     "webpack": "3.2.0",

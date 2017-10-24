@@ -96,7 +96,7 @@ function deriveSelectors(selectors) {
     const selector = selectors[key]
     if(selector instanceof Selector) {
       composedSelectors[key] = (...args) =>
-        (composedSelectors[key] = selector.extractFunction(selectors))(...args)
+        (composedSelectors[key] = selector.extractFunction(composedSelectors))(...args)
     }
     else {
       composedSelectors[key] = selector

@@ -214,7 +214,7 @@ function deriveSelectors(selectors) {
     var selector = selectors[key];
     if (selector instanceof Selector) {
       composedSelectors[key] = function () {
-        return (composedSelectors[key] = selector.extractFunction(selectors)).apply(undefined, arguments);
+        return (composedSelectors[key] = selector.extractFunction(composedSelectors)).apply(undefined, arguments);
       };
     } else {
       composedSelectors[key] = selector;

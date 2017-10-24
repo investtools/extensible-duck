@@ -1,5 +1,7 @@
 import Duck from '../../src/extensible-duck'
 import _ from 'lodash'
+import { createSelector } from 'reselect'
+
 
 describe('Duck', () => {
   describe('constructor', () => {
@@ -60,6 +62,22 @@ describe('Duck', () => {
       duck.selectors.myFunc()
       duck.selectors.myFunc()
       expect(passes).to.eql(1)
+    })
+    it('works with reselect', () => {
+      const duck = new Duck({
+        selectors: {
+          test1: state => state.test1,
+          test2: new Duck.Selector(selectors => createSelector(
+            selectors.test1,
+            test1 => test1
+          )),
+          test3: new Duck.Selector(selectors => createSelector(
+            selectors.test2,
+            test2 => test2
+          )),
+        }
+      })
+      expect(duck.selectors.test3({ test1: 'it works' })).to.eql('it works')
     })
     it('lets the initialState reference the duck instance', () => {
       const duck = new Duck({
