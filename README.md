@@ -62,7 +62,7 @@ export default new Duck({
 import { combineReducers } from 'redux'
 import widgetDuck from './widgetDuck'
 
-export default combineReducers({ widgets: widgetDuck.reducer })
+export default combineReducers({ [widgetDuck.store]: widgetDuck.reducer })
 ```
 
 ### Constructor Arguments
@@ -72,21 +72,26 @@ const { namespace, store, types, consts, initialState, creators } = options
 | Name         | Description                                             | Type                           | Example                                     |
 |--------------|---------------------------------------------------------|--------------------------------|---------------------------------------------|
 | namespace    | Used as a prefix for the types                          | String                         | `'my-app'`                                  |
-| store        | Used as a prefix for the types                          | String                         | `'widgets'`                                 |
+| store        | Used as a prefix for the types and as a redux state key | String                         | `'widgets'`                                 |
 | types        | List of action types                                    | Array                          | `[ 'CREATE', 'UPDATE' ]`                    |
 | consts       | Constants you may need to declare                       | Object of Arrays               | `{ statuses: [ 'LOADING', 'LOADED' ] }`     |
 | initialState | State passed to the reducer when the state is undefined | Anything                       | `{}`                                        |
 | reducer      | Action reducer                                          | function(state, action, duck)  | `(state, action, duck) => { return state }` |
 | creators     | Action creators                                         | function(duck)                 | `duck => ({ type: types.CREATE })`          |
-| selectors     | state selectors                                         | Object of functions                | `{ root: state => state}`          |
+| selectors    | state selectors                                         | Object of functions<br>or<br>function(duck) | `{ root: state => state}`<br>or<br>`duck => ({ root: state => state })` |
 
 ### Duck Accessors
 
+ * duck.store
  * duck.reducer
  * duck.creators
  * duck.selectors
  * duck.types
  * for each const, duck.\<const\>
+
+### Helper functions
+
+ * **constructLocalized(selectors)**: maps selectors syntax from `(globalStore) => selectorBody` into `(localStore, globalStore) => selectorBody`. `localStore` is derived from `globalStore` on every selector execution using `duck.storage` key. Use to simplify selectors syntax when used in tandem with reduxes' `combineReducers` to bind the duck to a dedicated state part ([example](#creating-ducks-with-selectors)).
 
 ### Defining the Reducer
 
@@ -242,6 +247,31 @@ export default new Duck({
 })
 ```
 
+Selectors with duck reference:
+
+```js
+export default new Duck({
+  // ...
+  selectors: (duck) => ({
+    shopItems:  state => state.shop.items,
+    addedItems: new Duck.Selector(selectors =>
+      createSelector(
+        selectors.shopItems,
+        items => {
+          const out = [];
+          items.forEach(item => {
+            if (-1 === duck.initialState.shop.items.indexOf(item)) {
+              out.push(item);
+            }
+          });
+          return out;
+        }
+      )
+    )
+  })
+})
+```
+
 ### Defining the Types
 
 ```js
@@ -340,7 +370,7 @@ export default createDuck({ namespace: 'my-app', store: 'user', path: '/users' }
 import { combineReducers } from 'redux'
 import userDuck from './userDuck'
 
-export default combineReducers({ user: userDuck.reducer })
+export default combineReducers({ [userDuck.store]: userDuck.reducer })
 ```
 
 ## Extending Ducks
@@ -406,9 +436,10 @@ Selectors help in providing performance optimisations when used with libraries s
 ```js
 // Duck.js
 
-import Duck from 'extensible-duck'
+import Duck, { constructLocalized } from 'extensible-duck'
 
 export default new Duck({
+  store: 'fruits',
   initialState: {
     items: [
       { name: 'apple', value: 1.2 },
@@ -421,7 +452,7 @@ export default new Duck({
       default: return state
     }
   },
-  selectors: {
+  selectors: constructLocalized({
     items: state => state.items, // gets the items from state
     subTotal: new Duck.Selector(selectors => state =>
       // Get another derived state reusing previous selector. In this case items selector
@@ -431,8 +462,17 @@ export default new Duck({
         .items(state)
         .reduce((computedTotal, item) => computedTotal + item.value, 0)
     )
-  }
+  })
 })
+```
+
+```js
+// reducers.js
+
+import { combineReducers } from 'redux'
+import Duck from './Duck'
+
+export default combineReducers({ [Duck.store]: Duck.reducer })
 ```
 
 ```js
