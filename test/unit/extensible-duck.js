@@ -1,4 +1,4 @@
-import Duck from '../../src/extensible-duck'
+import Duck, { constructLocalized } from '../../src/extensible-duck'
 import _ from 'lodash'
 import { createSelector } from 'reselect'
 
@@ -62,6 +62,42 @@ describe('Duck', () => {
       duck.selectors.myFunc()
       duck.selectors.myFunc()
       expect(passes).to.eql(1)
+    })
+    it('lets the selectors access the duck instance', () => {
+      const planetsState = {
+        planets: [
+          'mercury',
+          'wenus',
+          'earth',
+          'mars',
+        ]
+      }
+      const duck = new Duck({
+        store: 'box',
+        initialState: {
+          items: [
+            'chocolate',
+            'muffin',
+            'candy',
+          ]
+        },
+        selectors: constructLocalized({
+          countSweets: (localState) => localState.items.length,
+          countPlanets: (localState, globalState) => globalState.planets.length,
+          countObjects: new Duck.Selector(selectors => createSelector(
+            selectors.countSweets,
+            selectors.countPlanets,
+            (countSweets, countPlanets) => countSweets + countPlanets
+          )),
+        })
+      })
+      const store = {
+        ...planetsState,
+        [duck.store]: duck.initialState,
+      }
+      expect(duck.selectors.countSweets(store)).to.eql(3)
+      expect(duck.selectors.countPlanets(store)).to.eql(4)
+      expect(duck.selectors.countObjects(store)).to.eql(7)
     })
     it('works with reselect', () => {
       const duck = new Duck({
