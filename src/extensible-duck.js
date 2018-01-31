@@ -83,6 +83,26 @@ function assignDefaults(options) {
   }
 }
 
+function injectDuck(input, duck) {
+  if (input instanceof Function) {
+    return input(duck)
+  } else {
+    return input
+  }
+}
+
+export function constructLocalized(selectors) {
+  const derivedSelectors = deriveSelectors(selectors)
+  return (duck) => {
+    const localizedSelectors = {}
+    Object.keys(derivedSelectors).forEach(key => {
+      const selector = derivedSelectors[key]
+      localizedSelectors[key] = (globalState) => selector(globalState[duck.store], globalState)
+    })
+    return localizedSelectors
+  }
+}
+
 /**
  * Helper utility to assist in composing the selectors.
  * Previously defined selectors can be used to derive future selectors.
@@ -122,12 +142,13 @@ export default class Duck {
       this[name] = zipObject(consts[name], consts[name])
     })
 
+    this.store = store
     this.types = buildTypes(namespace, store, types)
     this.initialState = isFunction(initialState)
       ? initialState(this)
       : initialState
     this.reducer = this.reducer.bind(this)
-    this.selectors = deriveSelectors(selectors)
+    this.selectors = deriveSelectors(injectDuck(selectors, this))
     this.creators = creators(this)
   }
   reducer(state, action) {
@@ -159,7 +180,7 @@ export default class Duck {
         const parentCreators = parent.creators(duck)
         return { ...parentCreators, ...options.creators(duck, parentCreators) }
       },
-      selectors: { ...parent.selectors, ...options.selectors },
+      selectors: (duck) => ({ ...injectDuck(parent.selectors, duck), ...injectDuck(options.selectors, duck) }),
       types: [...parent.types, ...options.types],
       reducer: (state, action, duck) => {
         state = parent.reducer(state, action, duck)

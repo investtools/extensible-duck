@@ -79,6 +79,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony export (immutable) */ __webpack_exports__["constructLocalized"] = constructLocalized;
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Selector", function() { return Selector; });
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -201,6 +202,28 @@ function assignDefaults(options) {
   });
 }
 
+function injectDuck(input, duck) {
+  if (input instanceof Function) {
+    return input(duck);
+  } else {
+    return input;
+  }
+}
+
+function constructLocalized(selectors) {
+  var derivedSelectors = deriveSelectors(selectors);
+  return function (duck) {
+    var localizedSelectors = {};
+    Object.keys(derivedSelectors).forEach(function (key) {
+      var selector = derivedSelectors[key];
+      localizedSelectors[key] = function (globalState) {
+        return selector(globalState[duck.store], globalState);
+      };
+    });
+    return localizedSelectors;
+  };
+}
+
 /**
  * Helper utility to assist in composing the selectors.
  * Previously defined selectors can be used to derive future selectors.
@@ -244,10 +267,11 @@ var Duck = function () {
       _this[name] = zipObject(consts[name], consts[name]);
     });
 
+    this.store = store;
     this.types = buildTypes(namespace, store, types);
     this.initialState = isFunction(initialState) ? initialState(this) : initialState;
     this.reducer = this.reducer.bind(this);
-    this.selectors = deriveSelectors(selectors);
+    this.selectors = deriveSelectors(injectDuck(selectors, this));
     this.creators = creators(this);
   }
 
@@ -286,7 +310,9 @@ var Duck = function () {
           var parentCreators = parent.creators(duck);
           return _extends({}, parentCreators, options.creators(duck, parentCreators));
         },
-        selectors: _extends({}, parent.selectors, options.selectors),
+        selectors: function selectors(duck) {
+          return _extends({}, injectDuck(parent.selectors, duck), injectDuck(options.selectors, duck));
+        },
         types: [].concat(_toConsumableArray(parent.types), _toConsumableArray(options.types)),
         reducer: function reducer(state, action, duck) {
           state = parent.reducer(state, action, duck);
