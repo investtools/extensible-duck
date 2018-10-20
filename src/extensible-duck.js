@@ -103,6 +103,9 @@ export function constructLocalized(selectors) {
   }
 }
 
+// An alias for those who do not use the above spelling.
+export { constructLocalized as constructLocalised }
+
 /**
  * Helper utility to assist in composing the selectors.
  * Previously defined selectors can be used to derive future selectors.
