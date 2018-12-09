@@ -7,14 +7,14 @@ function zipObject (keys, values) {
     values = keys[1];
     keys = keys[0];
   }
-    
+
   var result = {};
   var i = 0;
-  
+
   for (i; i < keys.length; i += 1) {
     result[keys[i]] = values[i];
   }
-  
+
   return result;
 };
 
@@ -91,13 +91,32 @@ function injectDuck(input, duck) {
   }
 }
 
+function getLocalizedState(globalState, duck) {
+  let localizedState;
+
+  if (duck.storePath) {
+    const segments = [].concat(duck.storePath.split('.'), duck.store);
+    localizedState = segments.reduce(function getSegment(acc, segment) {
+      if (!acc[segment]) {
+        throw Error(`state does not contain reducer at storePath ${segments.join('.')}`)
+      }
+      return acc[segment];
+    }, globalState);
+  } else {
+    localizedState = globalState[duck.store];
+  }
+
+  return localizedState
+}
+
+
 export function constructLocalized(selectors) {
   const derivedSelectors = deriveSelectors(selectors)
   return (duck) => {
     const localizedSelectors = {}
     Object.keys(derivedSelectors).forEach(key => {
       const selector = derivedSelectors[key]
-      localizedSelectors[key] = (globalState) => selector(globalState[duck.store], globalState)
+      localizedSelectors[key] = (globalState) => selector(getLocalizedState(globalState, duck), globalState)
     })
     return localizedSelectors
   }
@@ -106,9 +125,9 @@ export function constructLocalized(selectors) {
 /**
  * Helper utility to assist in composing the selectors.
  * Previously defined selectors can be used to derive future selectors.
- * 
- * @param {object} selectors 
- * @returns 
+ *
+ * @param {object} selectors
+ * @returns
  */
 function deriveSelectors(selectors) {
   const composedSelectors = {}
@@ -131,6 +150,7 @@ export default class Duck {
     const {
       namespace,
       store,
+      storePath,
       types,
       consts,
       initialState,
@@ -143,6 +163,7 @@ export default class Duck {
     })
 
     this.store = store
+    this.storePath = storePath
     this.types = buildTypes(namespace, store, types)
     this.initialState = isFunction(initialState)
       ? initialState(this)

@@ -99,6 +99,41 @@ describe('Duck', () => {
       expect(duck.selectors.countPlanets(store)).to.eql(4)
       expect(duck.selectors.countObjects(store)).to.eql(7)
     })
+    it('can construct localized state of deep nested duck reference', () => {
+      const planetsState = {
+        planets: [
+          'mercury',
+          'wenus',
+          'earth',
+          'mars',
+        ]
+      }
+      const duck = new Duck({
+        store: 'box',
+        storePath: 'foo.bar',
+        initialState: {
+          items: [
+            'chocolate',
+            'muffin',
+            'candy',
+          ]
+        },
+        selectors: constructLocalized({
+          countSweets: (localState) => localState.items.length,
+          countPlanets: (localState, globalState) => globalState.planets.length,
+        })
+      })
+      const store = {
+        ...planetsState,
+        foo: {
+          bar: {
+            [duck.store]: duck.initialState,
+          }
+        }
+      }
+      expect(duck.selectors.countSweets(store)).to.eql(3)
+      expect(duck.selectors.countPlanets(store)).to.eql(4)
+    })
     it('works with reselect', () => {
       const duck = new Duck({
         selectors: {
