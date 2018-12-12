@@ -80,6 +80,7 @@ return /******/ (function(modules) { // webpackBootstrap
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (immutable) */ __webpack_exports__["constructLocalized"] = constructLocalized;
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "constructLocalised", function() { return constructLocalized; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Selector", function() { return Selector; });
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -210,6 +211,24 @@ function injectDuck(input, duck) {
   }
 }
 
+function getLocalizedState(globalState, duck) {
+  var localizedState = void 0;
+
+  if (duck.storePath) {
+    var segments = [].concat(duck.storePath.split('.'), duck.store);
+    localizedState = segments.reduce(function getSegment(acc, segment) {
+      if (!acc[segment]) {
+        throw Error('state does not contain reducer at storePath ' + segments.join('.'));
+      }
+      return acc[segment];
+    }, globalState);
+  } else {
+    localizedState = globalState[duck.store];
+  }
+
+  return localizedState;
+}
+
 function constructLocalized(selectors) {
   var derivedSelectors = deriveSelectors(selectors);
   return function (duck) {
@@ -217,19 +236,22 @@ function constructLocalized(selectors) {
     Object.keys(derivedSelectors).forEach(function (key) {
       var selector = derivedSelectors[key];
       localizedSelectors[key] = function (globalState) {
-        return selector(globalState[duck.store], globalState);
+        return selector(getLocalizedState(globalState, duck), globalState);
       };
     });
     return localizedSelectors;
   };
 }
 
+// An alias for those who do not use the above spelling.
+
+
 /**
  * Helper utility to assist in composing the selectors.
  * Previously defined selectors can be used to derive future selectors.
- * 
- * @param {object} selectors 
- * @returns 
+ *
+ * @param {object} selectors
+ * @returns
  */
 function deriveSelectors(selectors) {
   var composedSelectors = {};
@@ -256,6 +278,7 @@ var Duck = function () {
     var _options = options,
         namespace = _options.namespace,
         store = _options.store,
+        storePath = _options.storePath,
         types = _options.types,
         consts = _options.consts,
         initialState = _options.initialState,
@@ -268,6 +291,7 @@ var Duck = function () {
     });
 
     this.store = store;
+    this.storePath = storePath;
     this.types = buildTypes(namespace, store, types);
     this.initialState = isFunction(initialState) ? initialState(this) : initialState;
     this.reducer = this.reducer.bind(this);
