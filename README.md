@@ -73,6 +73,7 @@ const { namespace, store, types, consts, initialState, creators } = options
 |--------------|---------------------------------------------------------|--------------------------------|---------------------------------------------|
 | namespace    | Used as a prefix for the types                          | String                         | `'my-app'`                                  |
 | store        | Used as a prefix for the types and as a redux state key | String                         | `'widgets'`                                 |
+| storePath    | Object path of the store from root infinal redux state.  Defaults to the [duck.store] value.  Can be used to define duck store location in nested state  | String                         | `'foo.bar'`                                 |
 | types        | List of action types                                    | Array                          | `[ 'CREATE', 'UPDATE' ]`                    |
 | consts       | Constants you may need to declare                       | Object of Arrays               | `{ statuses: [ 'LOADING', 'LOADED' ] }`     |
 | initialState | State passed to the reducer when the state is undefined | Anything                       | `{}`                                        |
@@ -83,6 +84,7 @@ const { namespace, store, types, consts, initialState, creators } = options
 ### Duck Accessors
 
  * duck.store
+ * duck.storePath
  * duck.reducer
  * duck.creators
  * duck.selectors
@@ -91,7 +93,7 @@ const { namespace, store, types, consts, initialState, creators } = options
 
 ### Helper functions
 
- * **constructLocalized(selectors)**: maps selectors syntax from `(globalStore) => selectorBody` into `(localStore, globalStore) => selectorBody`. `localStore` is derived from `globalStore` on every selector execution using `duck.storage` key. Use to simplify selectors syntax when used in tandem with reduxes' `combineReducers` to bind the duck to a dedicated state part ([example](#creating-ducks-with-selectors)).
+ * **constructLocalized(selectors)**: maps selectors syntax from `(globalStore) => selectorBody` into `(localStore, globalStore) => selectorBody`. `localStore` is derived from `globalStore` on every selector execution using `duck.storage` key. Use to simplify selectors syntax when used in tandem with reduxes' `combineReducers` to bind the duck to a dedicated state part ([example](#creating-ducks-with-selectors)).  If defined will use the duck.storePath value to determine the localized state in deeply nested redux state trees.
 
 ### Defining the Reducer
 
