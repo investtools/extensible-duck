@@ -2,81 +2,81 @@ function typeValue(namespace, store, type) {
   return `${namespace}/${store}/${type}`
 }
 
-function zipObject (keys, values) {
+function zipObject(keys, values) {
   if (arguments.length == 1) {
-    values = keys[1];
-    keys = keys[0];
+    values = keys[1]
+    keys = keys[0]
   }
 
-  var result = {};
-  var i = 0;
+  var result = {}
+  var i = 0
 
   for (i; i < keys.length; i += 1) {
-    result[keys[i]] = values[i];
+    result[keys[i]] = values[i]
   }
 
-  return result;
-};
+  return result
+}
 
 function buildTypes(namespace, store, types) {
-  return zipObject(
-    types,
-    types.map(type => typeValue(namespace, store, type))
-  )
+  return zipObject(types, types.map(type => typeValue(namespace, store, type)))
 }
 
 function isObject(obj) {
-    return obj !== null && typeof obj === 'object';
+  return obj !== null && typeof obj === 'object'
 }
 
-function isFunction(func){
-   return func !== null && typeof func === 'function';
+function isFunction(func) {
+  return func !== null && typeof func === 'function'
 }
 
-function isUndefined(value){
-   return typeof value === 'undefined' || value === undefined;
+function isUndefined(value) {
+  return typeof value === 'undefined' || value === undefined
 }
 
 function isPlainObject(obj) {
-    return isObject(obj) && (
-        obj.constructor === Object  // obj = {}
-        || obj.constructor === undefined // obj = Object.create(null)
-    );
+  return (
+    isObject(obj) &&
+    (obj.constructor === Object || // obj = {}
+      obj.constructor === undefined) // obj = Object.create(null)
+  )
 }
 
 function mergeDeep(target, ...sources) {
-    if (!sources.length) return target;
-    const source = sources.shift();
+  if (!sources.length) return target
+  const source = sources.shift()
 
-    if(Array.isArray(target)) {
-        if(Array.isArray(source)) {
-            target.push(...source);
-        } else {
-            target.push(source);
-        }
-    } else if(isPlainObject(target)) {
-        if(isPlainObject(source)) {
-            for(let key of Object.keys(source)) {
-                if(!target[key]) {
-                    target[key] = source[key];
-                } else {
-                    mergeDeep(target[key], source[key]);
-                }
-            }
-        } else {
-            throw new Error(`Cannot merge object with non-object`);
-        }
+  if (Array.isArray(target)) {
+    if (Array.isArray(source)) {
+      target.push(...source)
     } else {
-        target = source;
+      target.push(source)
     }
+  } else if (isPlainObject(target)) {
+    if (isPlainObject(source)) {
+      for (let key of Object.keys(source)) {
+        if (!target[key]) {
+          target[key] = source[key]
+        } else {
+          mergeDeep(target[key], source[key])
+        }
+      }
+    } else {
+      throw new Error(`Cannot merge object with non-object`)
+    }
+  } else {
+    target = source
+  }
 
-    return mergeDeep(target, ...sources);
-};
+  return mergeDeep(target, ...sources)
+}
 
 function assignDefaults(options) {
   return {
     ...options,
     consts: options.consts || {},
+    sagas: options.sagas || (() => ({})),
+    takes: options.takes || (() => []),
     creators: options.creators || (() => ({})),
     selectors: options.selectors || {},
     types: options.types || [],
@@ -92,31 +92,33 @@ function injectDuck(input, duck) {
 }
 
 function getLocalizedState(globalState, duck) {
-  let localizedState;
+  let localizedState
 
   if (duck.storePath) {
-    const segments = [].concat(duck.storePath.split('.'), duck.store);
+    const segments = [].concat(duck.storePath.split('.'), duck.store)
     localizedState = segments.reduce(function getSegment(acc, segment) {
       if (!acc[segment]) {
-        throw Error(`state does not contain reducer at storePath ${segments.join('.')}`)
+        throw Error(
+          `state does not contain reducer at storePath ${segments.join('.')}`
+        )
       }
-      return acc[segment];
-    }, globalState);
+      return acc[segment]
+    }, globalState)
   } else {
-    localizedState = globalState[duck.store];
+    localizedState = globalState[duck.store]
   }
 
   return localizedState
 }
 
-
 export function constructLocalized(selectors) {
   const derivedSelectors = deriveSelectors(selectors)
-  return (duck) => {
+  return duck => {
     const localizedSelectors = {}
     Object.keys(derivedSelectors).forEach(key => {
       const selector = derivedSelectors[key]
-      localizedSelectors[key] = (globalState) => selector(getLocalizedState(globalState, duck), globalState)
+      localizedSelectors[key] = globalState =>
+        selector(getLocalizedState(globalState, duck), globalState)
     })
     return localizedSelectors
   }
@@ -136,11 +138,12 @@ function deriveSelectors(selectors) {
   const composedSelectors = {}
   Object.keys(selectors).forEach(key => {
     const selector = selectors[key]
-    if(selector instanceof Selector) {
+    if (selector instanceof Selector) {
       composedSelectors[key] = (...args) =>
-        (composedSelectors[key] = selector.extractFunction(composedSelectors))(...args)
-    }
-    else {
+        (composedSelectors[key] = selector.extractFunction(composedSelectors))(
+          ...args
+        )
+    } else {
       composedSelectors[key] = selector
     }
   })
@@ -159,6 +162,8 @@ export default class Duck {
       initialState,
       creators,
       selectors,
+      sagas,
+      takes,
     } = options
     this.options = options
     Object.keys(consts).forEach(name => {
@@ -174,6 +179,8 @@ export default class Duck {
     this.reducer = this.reducer.bind(this)
     this.selectors = deriveSelectors(injectDuck(selectors, this))
     this.creators = creators(this)
+    this.sagas = sagas(this)
+    this.takes = takes(this)
   }
   reducer(state, action) {
     if (isUndefined(state)) {
@@ -200,11 +207,22 @@ export default class Duck {
       ...options,
       initialState,
       consts: mergeDeep({}, parent.consts, options.consts),
+      sagas: duck => {
+        const parentSagas = parent.sagas(duck)
+        return { ...parentSagas, ...options.sagas(duck, parentSagas) }
+      },
+      takes: duck => {
+        const parentTakes = parent.takes(duck)
+        return [...parentTakes, ...options.takes(duck, parentTakes)]
+      },
       creators: duck => {
         const parentCreators = parent.creators(duck)
         return { ...parentCreators, ...options.creators(duck, parentCreators) }
       },
-      selectors: (duck) => ({ ...injectDuck(parent.selectors, duck), ...injectDuck(options.selectors, duck) }),
+      selectors: duck => ({
+        ...injectDuck(parent.selectors, duck),
+        ...injectDuck(options.selectors, duck),
+      }),
       types: [...parent.types, ...options.types],
       reducer: (state, action, duck) => {
         state = parent.reducer(state, action, duck)
@@ -229,4 +247,3 @@ export class Selector {
 }
 
 Duck.Selector = Selector
-
