@@ -16,6 +16,7 @@ extensible-duck is an implementation of the [Ducks proposal](https://github.com/
   - [Duck Accessors](#duck-accessors)
   - [Defining the Reducer](#defining-the-reducer)
   - [Defining the Creators](#defining-the-creators)
+  - [Defining the sagas](#defining-the-sagas)
   - [Defining the Initial State](#defining-the-initial-state)
   - [Defining the Selectors](#defining-the-selectors)
   - [Defining the Types](#defining-the-types)
@@ -49,8 +50,8 @@ export default new Duck({
   },
   creators: (duck) => ({
     loadWidgets:      () => ({ type: duck.types.LOAD }),
-    createWidget: widget => ({ type: duck.types.CREATE, widget })
-    updateWidget: widget => ({ type: duck.types.UPDATE, widget })
+    createWidget: widget => ({ type: duck.types.CREATE, widget }),
+    updateWidget: widget => ({ type: duck.types.UPDATE, widget }),
     removeWidget: widget => ({ type: duck.types.REMOVE, widget })
   })
 })
@@ -79,6 +80,8 @@ const { namespace, store, types, consts, initialState, creators } = options
 | initialState | State passed to the reducer when the state is undefined | Anything                       | `{}`                                        |
 | reducer      | Action reducer                                          | function(state, action, duck)  | `(state, action, duck) => { return state }` |
 | creators     | Action creators                                         | function(duck)                 | `duck => ({ type: types.CREATE })`          |
+| sagas        | Action sagas                                            | function(duck)                 | `duck => ({ fetchData: function* { yield ... }` |
+| takes        | Action takes                                            | function(duck)                 | `duck => ([ takeEvery(types.FETCH, sagas.fetchData) ])` |
 | selectors    | state selectors                                         | Object of functions<br>or<br>function(duck) | `{ root: state => state}`<br>or<br>`duck => ({ root: state => state })` |
 
 ### Duck Accessors
@@ -87,6 +90,8 @@ const { namespace, store, types, consts, initialState, creators } = options
  * duck.storePath
  * duck.reducer
  * duck.creators
+ * duck.sagas
+ * duck.takes
  * duck.selectors
  * duck.types
  * for each const, duck.\<const\>
@@ -174,6 +179,59 @@ export default new Duck({
 })
 ```
 
+### Defining the Sagas
+
+While plain vanilla creators would be defined by something like this:
+
+```js
+function* fetchData() {
+  try{
+  	yield put({ type: reducerDuck.types.FETCH_PENDING })
+    const payload = yield call(Get, 'data')
+    yield put({
+      type: reducerDuck.types.FETCH_FULFILLED,
+      payload
+    })
+  } catch(err) {
+    yield put({
+      type: reducerDuck.types.FETCH_FAILURE,
+      err
+    })
+  }
+}
+
+// Defining observer
+export default [ takeEvery(reducerDuck.types.FETCH, fetchData) ]
+```
+
+With extensible-duck you define it as an Object of functions accessing any duck attribute:
+
+```js
+export default new Duck({
+  // ...
+  sagas: {
+    fetchData: function* (duck) {
+    	try{
+        yield put({ type: duck.types.FETCH_PENDING })
+        const payload = yield call(Get, 'data')
+        yield put({
+          type: duck.types.FETCH_FULFILLED,
+          payload
+        })
+      } catch(err) {
+        yield put({
+          type: duck.types.FETCH_FAILURE,
+          err
+        })
+      }
+    }
+  },
+  // Defining observer
+  takes: (duck) => ([
+  	takeEvery(duck.types.FETCH, duck.sagas.fetchData)
+  ])
+})
+```
 
 ### Defining the Initial State
 
