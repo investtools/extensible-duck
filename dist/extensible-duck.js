@@ -110,7 +110,7 @@ function zipObject(keys, values) {
   }
 
   return result;
-};
+}
 
 function buildTypes(namespace, store, types) {
   return zipObject(types, types.map(function (type) {
@@ -131,9 +131,9 @@ function isUndefined(value) {
 }
 
 function isPlainObject(obj) {
-  return isObject(obj) && (obj.constructor === Object // obj = {}
-  || obj.constructor === undefined // obj = Object.create(null)
-  );
+  return isObject(obj) && (obj.constructor === Object || // obj = {}
+  obj.constructor === undefined) // obj = Object.create(null)
+  ;
 }
 
 function mergeDeep(target) {
@@ -190,7 +190,7 @@ function mergeDeep(target) {
   }
 
   return mergeDeep.apply(undefined, [target].concat(sources));
-};
+}
 
 function assignDefaults(options) {
   return _extends({}, options, {
