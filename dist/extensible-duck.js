@@ -195,6 +195,12 @@ function mergeDeep(target) {
 function assignDefaults(options) {
   return _extends({}, options, {
     consts: options.consts || {},
+    sagas: options.sagas || function () {
+      return {};
+    },
+    takes: options.takes || function () {
+      return [];
+    },
     creators: options.creators || function () {
       return {};
     },
@@ -283,7 +289,9 @@ var Duck = function () {
         consts = _options.consts,
         initialState = _options.initialState,
         creators = _options.creators,
-        selectors = _options.selectors;
+        selectors = _options.selectors,
+        sagas = _options.sagas,
+        takes = _options.takes;
 
     this.options = options;
     Object.keys(consts).forEach(function (name) {
@@ -297,6 +305,8 @@ var Duck = function () {
     this.reducer = this.reducer.bind(this);
     this.selectors = deriveSelectors(injectDuck(selectors, this));
     this.creators = creators(this);
+    this.sagas = sagas(this);
+    this.takes = takes(this);
   }
 
   _createClass(Duck, [{
@@ -330,6 +340,14 @@ var Duck = function () {
       return new Duck(_extends({}, parent, options, {
         initialState: initialState,
         consts: mergeDeep({}, parent.consts, options.consts),
+        sagas: function sagas(duck) {
+          var parentSagas = parent.sagas(duck);
+          return _extends({}, parentSagas, options.sagas(duck, parentSagas));
+        },
+        takes: function takes(duck) {
+          var parentTakes = parent.takes(duck);
+          return [].concat(_toConsumableArray(parentTakes), _toConsumableArray(options.takes(duck, parentTakes)));
+        },
         creators: function creators(duck) {
           var parentCreators = parent.creators(duck);
           return _extends({}, parentCreators, options.creators(duck, parentCreators));

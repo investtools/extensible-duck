@@ -2,7 +2,6 @@ import Duck, { constructLocalized } from '../../src/extensible-duck'
 import _ from 'lodash'
 import { createSelector } from 'reselect'
 
-
 describe('Duck', () => {
   describe('constructor', () => {
     it('transforms types in object with prefix', () => {
@@ -42,7 +41,8 @@ describe('Duck', () => {
             selectors
               .items(state)
               .reduce((computedTotal, item) => computedTotal + item.value, 0)
-        )},
+          ),
+        },
       })
       expect(duck.selectors.items(duck.initialState)).to.eql([
         { name: 'apple', value: 1.2 },
@@ -57,7 +57,8 @@ describe('Duck', () => {
           myFunc: new Duck.Selector(selectors => {
             passes++
             return () => {}
-          })},
+          }),
+        },
       })
       duck.selectors.myFunc()
       duck.selectors.myFunc()
@@ -65,31 +66,24 @@ describe('Duck', () => {
     })
     it('lets the selectors access the duck instance', () => {
       const planetsState = {
-        planets: [
-          'mercury',
-          'wenus',
-          'earth',
-          'mars',
-        ]
+        planets: ['mercury', 'wenus', 'earth', 'mars'],
       }
       const duck = new Duck({
         store: 'box',
         initialState: {
-          items: [
-            'chocolate',
-            'muffin',
-            'candy',
-          ]
+          items: ['chocolate', 'muffin', 'candy'],
         },
         selectors: constructLocalized({
-          countSweets: (localState) => localState.items.length,
+          countSweets: localState => localState.items.length,
           countPlanets: (localState, globalState) => globalState.planets.length,
-          countObjects: new Duck.Selector(selectors => createSelector(
-            selectors.countSweets,
-            selectors.countPlanets,
-            (countSweets, countPlanets) => countSweets + countPlanets
-          )),
-        })
+          countObjects: new Duck.Selector(selectors =>
+            createSelector(
+              selectors.countSweets,
+              selectors.countPlanets,
+              (countSweets, countPlanets) => countSweets + countPlanets
+            )
+          ),
+        }),
       })
       const store = {
         ...planetsState,
@@ -101,35 +95,26 @@ describe('Duck', () => {
     })
     it('can construct localized state of deep nested duck reference', () => {
       const planetsState = {
-        planets: [
-          'mercury',
-          'wenus',
-          'earth',
-          'mars',
-        ]
+        planets: ['mercury', 'wenus', 'earth', 'mars'],
       }
       const duck = new Duck({
         store: 'box',
         storePath: 'foo.bar',
         initialState: {
-          items: [
-            'chocolate',
-            'muffin',
-            'candy',
-          ]
+          items: ['chocolate', 'muffin', 'candy'],
         },
         selectors: constructLocalized({
-          countSweets: (localState) => localState.items.length,
+          countSweets: localState => localState.items.length,
           countPlanets: (localState, globalState) => globalState.planets.length,
-        })
+        }),
       })
       const store = {
         ...planetsState,
         foo: {
           bar: {
             [duck.store]: duck.initialState,
-          }
-        }
+          },
+        },
       }
       expect(duck.selectors.countSweets(store)).to.eql(3)
       expect(duck.selectors.countPlanets(store)).to.eql(4)
@@ -138,15 +123,13 @@ describe('Duck', () => {
       const duck = new Duck({
         selectors: {
           test1: state => state.test1,
-          test2: new Duck.Selector(selectors => createSelector(
-            selectors.test1,
-            test1 => test1
-          )),
-          test3: new Duck.Selector(selectors => createSelector(
-            selectors.test2,
-            test2 => test2
-          )),
-        }
+          test2: new Duck.Selector(selectors =>
+            createSelector(selectors.test1, test1 => test1)
+          ),
+          test3: new Duck.Selector(selectors =>
+            createSelector(selectors.test2, test2 => test2)
+          ),
+        },
       })
       expect(duck.selectors.test3({ test1: 'it works' })).to.eql('it works')
     })
@@ -172,17 +155,20 @@ describe('Duck', () => {
     it('lets the creators access the selectors', () => {
       const duck = new Duck({
         selectors: {
-          sum: numbers => numbers.reduce((sum, n) => sum + n, 0)
+          sum: numbers => numbers.reduce((sum, n) => sum + n, 0),
         },
         creators: ({ selectors }) => ({
           calculate: () => dispatch => {
-            dispatch({ type: 'CALCULATE', payload: selectors.sum([ 1, 2, 3 ]) })
-          }
-        })
+            dispatch({ type: 'CALCULATE', payload: selectors.sum([1, 2, 3]) })
+          },
+        }),
       })
       const dispatch = sinon.spy()
       duck.creators.calculate()(dispatch)
-      expect(dispatch).to.have.been.calledWith({ type: 'CALCULATE', payload: 6 })
+      expect(dispatch).to.have.been.calledWith({
+        type: 'CALCULATE',
+        payload: 6,
+      })
     })
   })
   describe('reducer', () => {
@@ -244,6 +230,30 @@ describe('Duck', () => {
         READY: 'READY',
         FAILED: 'FAILED',
       })
+    })
+    it('merges the takes', () => {
+      const duck = new Duck({ takes: () => ['first'] })
+      expect(duck.extend({ takes: () => ['second'] }).takes).to.eql([
+        'first',
+        'second',
+      ])
+    })
+    it('merges the sagas', () => {
+      const duck = new Duck({
+        sagas: () => ({
+          first: function*() {
+            yield 1
+          },
+        }),
+      })
+      const childDuck = duck.extend({
+        sagas: () => ({
+          second: function*() {
+            yield 2
+          },
+        }),
+      })
+      expect(_.keys(childDuck.sagas)).to.eql(['first', 'second'])
     })
     it('appends new types', () => {
       expect(
